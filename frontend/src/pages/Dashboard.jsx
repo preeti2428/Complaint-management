@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import StatCard from '../components/StatCard'
 import ComplaintCard from '../components/ComplaintCard'
 import Loader from '../components/Loader'
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const loadComplaints = async () => {
@@ -74,7 +76,7 @@ const Dashboard = () => {
             <ComplaintCard
               key={complaint._id}
               complaint={complaint}
-              onView={() => window.location.assign(`/complaints/${complaint._id}`)}
+              onView={() => navigate(`/complaints/${complaint._id}`)}
             />
           ))}
           {!loading && complaints.length === 0 ? (

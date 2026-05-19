@@ -43,6 +43,11 @@ const buildHeuristicAnalysis = (text) => {
     response: `Thanks for reporting. We have logged your complaint and routed it to the ${department} team.`,
     summary,
     adminAdvice: 'Assign a field team, verify the location, and provide an ETA update to the complainant.',
+    immediateActions:
+      'Verify location, shut off risk sources if any, and capture photos for evidence.',
+    escalation:
+      'Escalate to regional supervisor if hazard expands or multiple reports occur.',
+    etaSuggestion: 'Initial inspection within 4-6 hours; resolution within 24-48 hours.',
   }
 }
 
@@ -74,9 +79,10 @@ const analyzeWithAI = async (payload) => {
   const apiKey = process.env.AI_API_KEY
   const baseUrl = process.env.AI_BASE_URL || 'https://api.mistral.ai'
   const model = process.env.AI_MODEL || 'mistral-large-latest'
+  const fallbackText = payload.fallbackText || payload.prompt
 
   if (!apiKey) {
-    return { data: buildHeuristicAnalysis(payload.prompt) }
+    return { data: buildHeuristicAnalysis(fallbackText) }
   }
 
   const response = await fetch(`${baseUrl}/v1/chat/completions`, {
@@ -91,7 +97,7 @@ const analyzeWithAI = async (payload) => {
         {
           role: 'system',
           content:
-            'You are a complaint triage assistant. Respond with ONLY valid JSON containing priority, department, response, summary, adminAdvice. Priority must be High, Medium, or Low. If there is safety risk, accident, injury, or infrastructure danger, use High. Summary should be 15-25 words, plain sentence, no labels. Admin advice should be 1-2 sentences on how to tackle the issue.',
+            'You are a complaint triage assistant. Respond with ONLY valid JSON containing priority, department, response, summary, adminAdvice, immediateActions, escalation, etaSuggestion. Priority must be High, Medium, or Low. If there is safety risk, accident, injury, or infrastructure danger, use High. Summary should be 15-25 words, plain sentence, no labels. Response should be 2-3 sentences with actionable next steps for the complainant, not generic. Admin advice should be 1-2 sentences on how to tackle the issue. Immediate actions should be 1 sentence. Escalation should be 1 sentence. ETA suggestion should be 1 sentence.',
         },
         {
           role: 'user',
@@ -103,7 +109,7 @@ const analyzeWithAI = async (payload) => {
   })
 
   if (!response.ok) {
-    const fallback = buildHeuristicAnalysis(payload.prompt)
+    const fallback = buildHeuristicAnalysis(fallbackText)
     return { data: fallback }
   }
 
@@ -114,7 +120,7 @@ const analyzeWithAI = async (payload) => {
     const parsed = JSON.parse(message)
     return { data: parsed }
   } catch (error) {
-    return { data: buildHeuristicAnalysis(payload.prompt) }
+    return { data: buildHeuristicAnalysis(fallbackText) }
   }
 }
 
@@ -160,9 +166,10 @@ const assistUser = async ({ prompt }) => {
 }
 
 const analyzeComplaint = async ({ title, description, category, location }) => {
-  const prompt = `Title: ${title}\nCategory: ${category}\nLocation: ${location}\nDescription: ${description}\nReturn JSON with priority, department, response, summary, adminAdvice.`
+  const prompt = `Title: ${title}\nCategory: ${category}\nLocation: ${location}\nDescription: ${description}\nReturn JSON with priority, department, response, summary, adminAdvice, immediateActions, escalation, etaSuggestion.`
+  const fallbackText = `Title: ${title}. Category: ${category}. Location: ${location}. Description: ${description}.`
 
-  const result = await analyzeWithAI({ prompt })
+  const result = await analyzeWithAI({ prompt, fallbackText })
 
   return {
     priority: result.data.priority || 'Medium',
@@ -172,6 +179,15 @@ const analyzeComplaint = async ({ title, description, category, location }) => {
     adminAdvice:
       result.data.adminAdvice ||
       'Assign a field team, verify the location, and provide an ETA update to the complainant.',
+    immediateActions:
+      result.data.immediateActions ||
+      'Verify location, shut off risk sources if any, and capture photos for evidence.',
+    escalation:
+      result.data.escalation ||
+      'Escalate to regional supervisor if hazard expands or multiple reports occur.',
+    etaSuggestion:
+      result.data.etaSuggestion ||
+      'Initial inspection within 4-6 hours; resolution within 24-48 hours.',
   }
 }
 

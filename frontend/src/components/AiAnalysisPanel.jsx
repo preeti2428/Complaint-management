@@ -28,6 +28,30 @@ const AiAnalysisPanel = ({ analysis, onAnalyze, loading }) => {
             <p className="ai-label">Auto Response</p>
             <p className="ai-value">{analysis.response}</p>
           </div>
+          {analysis.immediateActions ? (
+            <div>
+              <p className="ai-label">Immediate Actions</p>
+              <p className="ai-value">{analysis.immediateActions}</p>
+            </div>
+          ) : null}
+          {analysis.escalation ? (
+            <div>
+              <p className="ai-label">Escalation</p>
+              <p className="ai-value">{analysis.escalation}</p>
+            </div>
+          ) : null}
+          {analysis.etaSuggestion ? (
+            <div>
+              <p className="ai-label">ETA Suggestion</p>
+              <p className="ai-value">{analysis.etaSuggestion}</p>
+            </div>
+          ) : null}
+          {analysis.adminAdvice ? (
+            <div>
+              <p className="ai-label">Admin Guidance</p>
+              <p className="ai-value">{analysis.adminAdvice}</p>
+            </div>
+          ) : null}
         </div>
       ) : (
         <p className="empty">Run analysis to generate priority and routing details.</p>
